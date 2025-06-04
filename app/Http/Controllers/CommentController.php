@@ -17,7 +17,7 @@ class CommentController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Post $post)
     {
         return response()->json($post->comments);
     }
@@ -27,10 +27,27 @@ class CommentController extends Controller implements HasMiddleware
         $request->validate(['content' => 'required|string']);
 
         $comment = $post->comments()->create([
-            'content' => $request->content
+            'content' => $request->content,
+            'user_id' => auth()->id()
         ]);
 
         return response()->json($comment, 201);
+    }
+
+    public function update(Request $request, Post $post, Comment $comment)
+    {
+        $fields = $request->validate([
+            'content' => 'required|string',
+        ]);
+
+        // Optional: Check that comment belongs to post
+        if ($comment->post_id !== $post->id) {
+            return response()->json(['message' => 'Comment does not belong to this post'], 403);
+        }
+
+        $comment->update($fields);
+
+        return response()->json($comment);
     }
 
     public function destroy(Post $post, Comment $comment)
